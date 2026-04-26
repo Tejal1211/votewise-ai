@@ -1,0 +1,19 @@
+<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="VoteWise AI Logo">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f6cff" />
+      <stop offset="100%" stop-color="#0d4efd" />
+    </linearGradient>
+    <linearGradient id="checkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#70d7ff" />
+      <stop offset="100%" stop-color="#00a5ff" />
+    </linearGradient>
+  </defs>
+  <path d="M60 8c-24 0-44 14-52 34 6 36 22 54 42 62 20-8 36-26 42-62C104 22 84 8 60 8Z" fill="url(#shieldGrad)" stroke="#0c4b9d" stroke-width="4"/>
+  <path d="M40 62c8-10 18-16 28-18 10 2 18 8 20 18" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" />
+  <path d="M47 75l10 10 20-26" fill="none" stroke="url(#checkGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M60 30c6 0 11 5 11 11s-5 11-11 11-11-5-11-11 5-11 11-11Z" fill="#cef0ff" />
+  <path d="M45 34c5 5 11 8 15 11" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+  <path d="M69 34c-5 5-10 9-14 11" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+  <path d="M52 43c3 4 8 6 13 6" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+</svg>

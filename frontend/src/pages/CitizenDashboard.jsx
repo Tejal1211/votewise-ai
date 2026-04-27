@@ -108,7 +108,7 @@ const CitizenDashboard = () => {
   }
 
   return (
-    <main className="min-h-screen mesh-bg pt-20 pb-16">
+    <main id="main-content" className="min-h-screen mesh-bg pt-20 pb-16">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-8">

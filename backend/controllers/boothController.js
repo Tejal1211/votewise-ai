@@ -72,7 +72,12 @@ const mockRegionStats = {
   },
 };
 
-// GET /api/booths - Get nearest polling booths
+/**
+ * GET /api/booths
+ * Returns a list of polling booths near the provided coordinates
+ * @param {Object} req - Request object with query params lat, lng, radius
+ * @param {Object} res - Response object
+ */
 const getBooths = async (req, res) => {
   try {
     const { lat, lng, radius = 5 } = req.query;
@@ -117,7 +122,12 @@ const getBooths = async (req, res) => {
   }
 };
 
-// GET /api/booths/:id - Get booth details
+/**
+ * GET /api/booths/:id
+ * Fetches detailed information about a specific polling booth
+ * @param {Object} req - Request object with param id
+ * @param {Object} res - Response object
+ */
 const getBoothById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -138,7 +148,12 @@ const getBoothById = async (req, res) => {
   }
 };
 
-// GET /api/live-status - Get live voting status
+/**
+ * GET /api/live-status
+ * Provides real-time metrics for booths or regions
+ * @param {Object} req - Request object with query params boothId or regionId
+ * @param {Object} res - Response object
+ */
 const getLiveStatus = async (req, res) => {
   try {
     const { boothId, regionId } = req.query;
@@ -210,7 +225,12 @@ const getLiveStatus = async (req, res) => {
   }
 };
 
-// GET /api/booth-directions - Get directions to booth
+/**
+ * GET /api/booth-directions
+ * Calculates estimated travel times and modes to a destination booth
+ * @param {Object} req - Request object with origin and destination coordinates
+ * @param {Object} res - Response object
+ */
 const getBoothDirections = async (req, res) => {
   try {
     const { originLat, originLng, destLat, destLng } = req.query;
@@ -273,7 +293,12 @@ const getBoothDirections = async (req, res) => {
   }
 };
 
-// GET /api/best-vote-time - Get best time to vote
+/**
+ * GET /api/best-vote-time
+ * Provides recommendations for when to visit a booth based on crowd patterns
+ * @param {Object} req - Request object with query param boothId
+ * @param {Object} res - Response object
+ */
 const getBestVoteTime = async (req, res) => {
   try {
     const { boothId } = req.query;
@@ -316,7 +341,12 @@ const getBestVoteTime = async (req, res) => {
   }
 };
 
-// GET /api/admin/stats - Get admin statistics
+/**
+ * GET /api/admin/stats
+ * Secure endpoint for high-level voting system analytics
+ * @param {Object} req - Request object with header x-admin-key
+ * @param {Object} res - Response object
+ */
 const getAdminStats = async (req, res) => {
   try {
     // Check admin authorization (implement proper auth in production)

@@ -336,3 +336,49 @@ test("404 route returns proper error", async () => {
   assert.ok(body.error);
   server.close();
 });
+
+test("ocr extract requires imageBase64", async () => {
+  const server = await startServer();
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${url}/api/ocr`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}),
+  });
+  assert.strictEqual(response.status, 400);
+  server.close();
+});
+
+test("live status handles non-existent region", async () => {
+  const server = await startServer();
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${url}/api/live-status?regionId=INVALID`);
+  assert.strictEqual(response.status, 404);
+  server.close();
+});
+
+test("eligibility check handles non-indian citizenship", async () => {
+  const server = await startServer();
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${url}/api/eligibility`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ age: 25, citizenship: "foreign" }),
+  });
+  assert.strictEqual(response.status, 200);
+  const body = await response.json();
+  assert.strictEqual(body.eligible, false);
+  server.close();
+});
+
+test("face match requires consent", async () => {
+  const server = await startServer();
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const response = await fetch(`${url}/api/face-match`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ selfieBase64: "...", idPhotoBase64: "...", consent: false }),
+  });
+  assert.strictEqual(response.status, 400);
+  server.close();
+});

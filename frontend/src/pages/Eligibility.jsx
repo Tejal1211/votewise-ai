@@ -80,7 +80,7 @@ const Eligibility = () => {
   };
 
   return (
-    <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="eligibility-heading">
+    <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="eligibility-heading">
       <div className="max-w-xl mx-auto">
         <div className="text-center mb-10">
           <span className="text-5xl mb-4 block">✅</span>

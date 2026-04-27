@@ -75,7 +75,7 @@ const timelineEvents = [
 ];
 
 const Timeline = () => (
-  <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="timeline-heading">
+  <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="timeline-heading">
     <div className="max-w-3xl mx-auto">
       <div className="text-center mb-14">
         <span className="text-5xl mb-4 block">📅</span>

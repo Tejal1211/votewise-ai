@@ -69,7 +69,7 @@ const Myths = () => {
   const toggleFlip = (i) => setFlipped((prev) => ({ ...prev, [i]: !prev[i] }));
 
   return (
-    <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="myths-heading">
+    <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="myths-heading">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-10">
           <span className="text-5xl mb-4 block">💡</span>

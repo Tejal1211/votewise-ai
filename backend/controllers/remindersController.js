@@ -10,7 +10,12 @@ const ELECTION_DATES = {
   resultDay: "2026-04-17",
 };
 
-// Get election timeline
+/**
+ * GET /api/timeline
+ * Returns the election schedule and key dates for the 2026 cycle
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const getElectionTimeline = async (req, res) => {
   try {
     const timeline = [
@@ -72,7 +77,12 @@ const getElectionTimeline = async (req, res) => {
   }
 };
 
-// Get document checklist
+/**
+ * GET /api/checklist
+ * Returns the interactive document checklist for voter registration
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const getDocumentChecklist = async (req, res) => {
   try {
     const checklist = [
@@ -120,7 +130,12 @@ const getDocumentChecklist = async (req, res) => {
   }
 };
 
-// Get myths and facts
+/**
+ * GET /api/myths
+ * Returns educational myths vs facts about the election process
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const getMythsAndFacts = async (req, res) => {
   try {
     const myths = [
@@ -169,7 +184,12 @@ const getMythsAndFacts = async (req, res) => {
   }
 };
 
-// Get wizard guidance based on user inputs
+/**
+ * POST /api/wizard
+ * Generates personalized voting guidance based on user inputs
+ * @param {Object} req - Express request object with age, state, firstTimeVoter, needsAssistance
+ * @param {Object} res - Express response object
+ */
 const getWizardGuidance = async (req, res) => {
   try {
     const { age, state, firstTimeVoter, needsAssistance } = req.body;

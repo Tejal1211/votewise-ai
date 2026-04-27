@@ -31,7 +31,14 @@ const Navbar = () => {
   ];
 
   return (
-    <nav
+    <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-[100] focus:bg-white focus:text-primary-700 focus:px-4 focus:py-2 focus:rounded-lg focus:shadow-xl focus:border focus:border-primary-200 focus:font-bold"
+      >
+        Skip to main content
+      </a>
+      <nav
       className="fixed top-0 left-0 right-0 z-50 glass border-b border-white/40 shadow-sm"
       role="navigation"
       aria-label="Main navigation"
@@ -230,7 +237,7 @@ const Navbar = () => {
           </div>
         )}
       </div>
-    </nav>
+    </>
   );
 };
 

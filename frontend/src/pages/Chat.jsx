@@ -197,7 +197,7 @@ const Chat = () => {
   };
 
   return (
-    <main className="min-h-screen mesh-bg pt-16" aria-label="AI Chat Assistant">
+    <main id="main-content" className="min-h-screen mesh-bg pt-16" aria-label="AI Chat Assistant">
       <div className="max-w-3xl mx-auto px-4 py-8 h-screen flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 mb-4">

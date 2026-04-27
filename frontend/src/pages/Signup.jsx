@@ -60,7 +60,7 @@ const Signup = () => {
   };
 
   return (
-    <main className="min-h-screen mesh-bg pt-16 flex items-center justify-center px-4 py-8">
+    <main id="main-content" className="min-h-screen mesh-bg pt-16 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="card shadow-2xl animate-fade-in">
           <div className="text-center mb-8">

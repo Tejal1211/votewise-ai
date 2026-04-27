@@ -53,7 +53,7 @@ const Landing = () => {
   const { user } = useAuth();
 
   return (
-    <main className="min-h-screen mesh-bg pt-16">
+    <main id="main-content" className="min-h-screen mesh-bg pt-16">
       {/* Hero Section */}
       <section
         className="relative overflow-hidden px-4 sm:px-6 lg:px-8 pt-20 pb-24"

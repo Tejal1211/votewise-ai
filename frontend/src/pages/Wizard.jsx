@@ -96,7 +96,7 @@ const Wizard = () => {
 
   if (done) {
     return (
-      <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="wizard-result-heading">
+      <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="wizard-result-heading">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
             <span className="text-5xl mb-4 block">🎯</span>
@@ -128,7 +128,7 @@ const Wizard = () => {
   }
 
   return (
-    <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="wizard-heading">
+    <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="wizard-heading">
       <div className="max-w-lg mx-auto">
         <div className="text-center mb-10">
           <span className="text-5xl mb-4 block">🎯</span>

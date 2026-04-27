@@ -76,7 +76,7 @@ const Login = () => {
   };
 
   return (
-    <main className="min-h-screen mesh-bg pt-16 flex items-center justify-center px-4">
+    <main id="main-content" className="min-h-screen mesh-bg pt-16 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="card shadow-2xl animate-fade-in">
           {/* Header */}

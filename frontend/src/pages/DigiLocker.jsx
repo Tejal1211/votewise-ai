@@ -105,7 +105,7 @@ const DigiLocker = () => {
   };
 
   return (
-    <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="digilocker-heading">
+    <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="digilocker-heading">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
           <span className="text-5xl mb-4 block">🔐</span>

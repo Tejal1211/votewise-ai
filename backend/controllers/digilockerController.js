@@ -29,6 +29,10 @@ const maskAadhaar = (aadhaar) => {
   return `XXXX-XXXX-${suffix}`;
 };
 
+/**
+ * Creates a sandbox user profile for demonstration purposes
+ * @returns {Object} Sandbox profile object
+ */
 const createSandboxProfile = () => ({
   name: "Ananya Sharma",
   dob: "1999-05-17",
@@ -42,6 +46,10 @@ const createSandboxProfile = () => ({
   consent: "User has approved DigiLocker access for voter verification and document retrieval.",
 });
 
+/**
+ * Creates a set of sandbox documents for demonstration purposes
+ * @returns {Array<Object>} List of sandbox documents
+ */
 const createSandboxDocuments = () => [
   {
     id: "aadhaar-1",
@@ -81,6 +89,11 @@ const createSandboxDocuments = () => [
   },
 ];
 
+/**
+ * Builds the DigiLocker authorization URL
+ * @param {Object} req - Express request object
+ * @returns {string} Fully qualified auth URL
+ */
 const buildAuthUrl = (req) => {
   if (isSandboxMode) {
     return `${FRONTEND_URL}/digilocker?status=connected&sandbox=true`;
@@ -111,6 +124,11 @@ const authorizeSandbox = (req) => {
   req.session.digilocker = getSandboxSession();
 };
 
+/**
+ * Initiates the DigiLocker login flow
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const digilockerLogin = (req, res) => {
   try {
     const authUrl = buildAuthUrl(req);
@@ -148,6 +166,11 @@ const exchangeToken = async (code) => {
   return response.json();
 };
 
+/**
+ * Handles the DigiLocker OAuth callback
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const digilockerCallback = async (req, res) => {
   try {
     if (isSandboxMode) {
@@ -209,6 +232,11 @@ const getDigiLockerSession = (req) => {
   return session;
 };
 
+/**
+ * Fetches the connected DigiLocker profile
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const digilockerProfile = (req, res) => {
   const session = getDigiLockerSession(req);
   if (!session) {
@@ -217,6 +245,11 @@ const digilockerProfile = (req, res) => {
   return res.json({ profile: session.profile, status: "connected", mode: session.mode });
 };
 
+/**
+ * Fetches the list of verified documents from DigiLocker
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
 const digilockerDocuments = (req, res) => {
   const session = getDigiLockerSession(req);
   if (!session) {
@@ -237,6 +270,11 @@ const digilockerDocumentById = (req, res) => {
   return res.json({ document });
 };
 
+/**
+ * Extracts text from a document image using Google Vision OCR
+ * @param {Object} req - Express request object with imageBase64
+ * @param {Object} res - Express response object
+ */
 const ocrExtract = async (req, res) => {
   try {
     const { imageBase64 } = req.body;

@@ -102,7 +102,7 @@ const Dashboard = () => {
   }
 
   return (
-    <main className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="dashboard-heading">
+    <main id="main-content" className="min-h-screen mesh-bg pt-20 px-4 pb-16" aria-labelledby="dashboard-heading">
       <div className="max-w-5xl mx-auto">
         {/* Welcome header */}
         <div className="flex items-center gap-4 mb-10 animate-fade-in">

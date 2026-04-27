@@ -147,7 +147,7 @@ const AdminDashboard = () => {
 
             <div className="card shadow-lg p-6 bg-gradient-to-br from-emerald-50 to-teal-50">
               <p className="text-gray-600 text-sm font-medium mb-2">Total Voters Processed</p>
-              <p className="text-3xl font-bold text-emerald-700">{stats.overview.totalVoters.toLocaleString()}</p>
+              <p className="text-3xl font-bold text-emerald-700">{(stats.overview.totalVoters || 0).toLocaleString()}</p>
               <p className="text-xs text-gray-600 mt-2">
                 {((stats.overview.totalVoters / stats.overview.totalCapacity) * 100).toFixed(1)}% of capacity
               </p>
@@ -199,7 +199,7 @@ const AdminDashboard = () => {
                     <div>
                       <p className="text-xs text-gray-600">Turnout</p>
                       <p className="text-xl font-bold text-primary-700">
-                        {regions.find((r) => r.regionId === selectedRegion)?.turnoutPercentage.toFixed(1)}%
+                        {regions.find((r) => r.regionId === selectedRegion)?.turnoutPercentage?.toFixed(1)}%
                       </p>
                     </div>
                     <div>

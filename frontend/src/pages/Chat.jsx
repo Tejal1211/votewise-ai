@@ -8,7 +8,7 @@ import {
   clearChatHistory,
 } from "../services/chatHistoryService";
 
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env?.VITE_API_URL || "";
 
 const SUGGESTED_QUESTIONS = [
   "How do I register to vote?",
@@ -31,7 +31,7 @@ const Chat = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -40,6 +40,7 @@ const Chat = () => {
     if (!user) return;
 
     const loadHistory = async () => {
+      setInitialLoading(true);
       // Safety timeout to ensure loading screen vanishes
       const timeout = setTimeout(() => {
         setInitialLoading(false);
@@ -62,7 +63,7 @@ const Chat = () => {
       } catch (error) {
         console.error("Failed to load chat history:", error);
       } finally {
-        clearTimeout(timeout);
+        if (timeout) clearTimeout(timeout);
         setInitialLoading(false);
       }
     };
@@ -89,7 +90,11 @@ const Chat = () => {
       50
     );
 
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === "function") {
+        unsubscribe();
+      }
+    };
   }, [user]);
 
   useEffect(() => {
@@ -234,32 +239,45 @@ const Chat = () => {
               className="flex-1 overflow-y-auto space-y-4 py-4 px-1"
               role="log"
               aria-live="polite"
-              aria-label="Chat messages"
+              aria-label="Chat messages - conversation history"
             >
-              {messages.map((msg, i) => (
-                <div
-                  key={i}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
-                >
-                  {msg.role === "assistant" && (
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1 shadow">
-                      🤖
-                    </div>
-                  )}
+              {messages.map((msg, i) => {
+                const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : "";
+                const senderLabel = msg.role === "user" ? "You" : "VoteWise AI Assistant";
+                const ariaLabel = `Message from ${senderLabel}${timestamp ? ` at ${timestamp}` : ""}: ${msg.content.substring(0, 50)}...`;
+
+                return (
                   <div
-                    className={`max-w-[80%] px-4 py-3 text-sm leading-relaxed shadow-sm ${
-                      msg.role === "user" ? "chat-user" : "chat-ai"
-                    }`}
-                    style={{ whiteSpace: "pre-wrap" }}
+                    key={i}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
+                    role="article"
+                    aria-label={ariaLabel}
                   >
-                    {msg.content}
+                    {msg.role === "assistant" && (
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1 shadow" aria-hidden="true">
+                        🤖
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[80%] px-4 py-3 text-sm leading-relaxed shadow-sm ${
+                        msg.role === "user" ? "chat-user" : "chat-ai"
+                      }`}
+                      style={{ whiteSpace: "pre-wrap" }}
+                    >
+                      {msg.content}
+                      {timestamp && (
+                        <div className="text-xs opacity-60 mt-1" aria-label={`Sent at ${timestamp}`}>
+                          {timestamp}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {loading && (
-                <div className="flex justify-start animate-fade-in">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-sm mr-2 flex-shrink-0">
+                <div className="flex justify-start animate-fade-in" aria-live="polite" aria-label="AI is typing">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-indigo-600 flex items-center justify-center text-sm mr-2 flex-shrink-0" aria-hidden="true">
                     🤖
                   </div>
                   <div className="chat-ai px-4 py-3 flex gap-1 items-center">
@@ -268,6 +286,7 @@ const Chat = () => {
                         key={i}
                         className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
                         style={{ animationDelay: `${delay}s` }}
+                        aria-hidden="true"
                       ></span>
                     ))}
                   </div>
@@ -306,7 +325,7 @@ const Chat = () => {
                 disabled={loading || !user}
                 className="flex-1 bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:bg-gray-50 disabled:text-gray-400 resize-none"
                 rows="3"
-                aria-label="Chat message input"
+                aria-label="Type your message"
               ></textarea>
               <button
                 onClick={() => sendMessage()}

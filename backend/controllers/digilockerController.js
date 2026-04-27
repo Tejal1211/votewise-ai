@@ -4,14 +4,27 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const BACKEND_URL = process.env.BACKEND_URL || `http://localhost:5000`;
 const DIGILOCKER_CLIENT_ID = process.env.DIGILOCKER_CLIENT_ID;
 const DIGILOCKER_CLIENT_SECRET = process.env.DIGILOCKER_CLIENT_SECRET;
-const DIGILOCKER_REDIRECT_URI = process.env.DIGILOCKER_REDIRECT_URI || `${BACKEND_URL}/api/digilocker/callback`;
-const DIGILOCKER_AUTH_URL = process.env.DIGILOCKER_AUTH_URL || "https://dev.digilocker.gov.in/public/oauth2/1/authorize";
-const DIGILOCKER_TOKEN_URL = process.env.DIGILOCKER_TOKEN_URL || "https://dev.digilocker.gov.in/public/oauth2/1/token";
+const DIGILOCKER_REDIRECT_URI =
+  process.env.DIGILOCKER_REDIRECT_URI || `${BACKEND_URL}/api/digilocker/callback`;
+const DIGILOCKER_AUTH_URL =
+  process.env.DIGILOCKER_AUTH_URL || "https://dev.digilocker.gov.in/public/oauth2/1/authorize";
+const DIGILOCKER_TOKEN_URL =
+  process.env.DIGILOCKER_TOKEN_URL || "https://dev.digilocker.gov.in/public/oauth2/1/token";
 
-const isSandboxMode = !DIGILOCKER_CLIENT_ID || !DIGILOCKER_CLIENT_SECRET || process.env.USE_DIGILOCKER_SANDBOX === "true";
+const isSandboxMode =
+  !DIGILOCKER_CLIENT_ID ||
+  !DIGILOCKER_CLIENT_SECRET ||
+  process.env.USE_DIGILOCKER_SANDBOX === "true";
 
+/**
+ * Masks Aadhaar number for privacy
+ * @param {string} aadhaar - Full Aadhaar number
+ * @returns {string} Masked Aadhaar (XXXX-XXXX-last4)
+ */
 const maskAadhaar = (aadhaar) => {
-  if (!aadhaar || aadhaar.length < 4) return "XXXX-XXXX-XXXX";
+  if (!aadhaar || typeof aadhaar !== "string" || aadhaar.length < 4) {
+    return "XXXX-XXXX-XXXX";
+  }
   const suffix = aadhaar.slice(-4);
   return `XXXX-XXXX-${suffix}`;
 };
@@ -143,10 +156,23 @@ const digilockerCallback = async (req, res) => {
     }
 
     const { code, state } = req.query;
-    if (!code || !state || state !== req.session.digilockerState) {
-      return res.status(400).send("DigiLocker callback state mismatch or missing code.");
+
+    // Validate OAuth parameters
+    if (!code || !state) {
+      const error = !code ? "Missing authorization code" : "Missing state parameter";
+      console.error(`DigiLocker callback validation error: ${error}`);
+      return res.status(400).send(`DigiLocker callback error: ${error}`);
     }
 
+    // Verify state to prevent CSRF attacks
+    if (state !== req.session?.digilockerState) {
+      console.error(
+        `DigiLocker callback state mismatch: expected ${req.session?.digilockerState}, received ${state}`
+      );
+      return res.status(400).send("DigiLocker callback state mismatch. Please try again.");
+    }
+
+    // Exchange authorization code for access token
     const tokenResponse = await exchangeToken(code);
     req.session.digilocker = {
       authorized: true,
@@ -160,9 +186,18 @@ const digilockerCallback = async (req, res) => {
 
     return res.redirect(`${FRONTEND_URL}/digilocker?status=consent`);
   } catch (err) {
-    console.error("DigiLocker callback error:", err.message);
+    // Log error details for debugging/monitoring
+    const errorDetails = {
+      timestamp: new Date().toISOString(),
+      error: err.message,
+      code: err.code,
+      status: err.status,
+    };
+    console.error(`DigiLocker callback error:`, errorDetails);
+
+    // Fall back to sandbox mode on error, but indicate failure
     authorizeSandbox(req);
-    return res.redirect(`${FRONTEND_URL}/digilocker?status=consent&sandbox=true&error=exchange`);
+    return res.redirect(`${FRONTEND_URL}/digilocker?status=consent&sandbox=true&error=exchange_failed`);
   }
 };
 
@@ -244,8 +279,11 @@ const ocrExtract = async (req, res) => {
       fields: {
         name: nameMatch?.[0] || "Ananya Sharma",
         dob: dobMatch?.[0] || "1999-05-17",
-        address: text.split("\n").slice(0, 3).join(", ") || "12 Green Park, New Delhi, Delhi 110016",
-        documentNumber: idMatch?.[0] ? `${idMatch[0].slice(0, 4)}****${idMatch[0].slice(-4)}` : "XXXX-XXXX-1234",
+        address:
+          text.split("\n").slice(0, 3).join(", ") || "12 Green Park, New Delhi, Delhi 110016",
+        documentNumber: idMatch?.[0]
+          ? `${idMatch[0].slice(0, 4)}****${idMatch[0].slice(-4)}`
+          : "XXXX-XXXX-1234",
       },
       source: "vision_api",
     });
@@ -255,20 +293,66 @@ const ocrExtract = async (req, res) => {
   }
 };
 
+/**
+ * Performs face verification between selfie and ID photo
+ * Note: In production, integrate with ML-based face recognition service
+ * @route POST /api/digilocker/face-match
+ * @param {Object} req - Express request object
+ * @param {string} req.body.selfieBase64 - Base64 encoded selfie image
+ * @param {string} req.body.idPhotoBase64 - Base64 encoded ID photo
+ * @param {boolean} req.body.consent - User consent for face verification
+ * @param {Object} res - Express response object
+ * @returns {Object} JSON with face matching result and confidence score
+ */
 const faceMatch = (req, res) => {
-  const { selfieBase64, idPhotoBase64, consent } = req.body;
-  if (!selfieBase64 || !idPhotoBase64) {
-    return res.status(400).json({ error: "Selfie and ID photo are required." });
+  try {
+    const { selfieBase64, idPhotoBase64, consent } = req.body;
+
+    // Validate inputs
+    if (!selfieBase64 || typeof selfieBase64 !== "string") {
+      return res.status(400).json({ error: "Selfie image is required and must be a string." });
+    }
+    if (!idPhotoBase64 || typeof idPhotoBase64 !== "string") {
+      return res.status(400).json({
+        error: "ID photo image is required and must be a string.",
+      });
+    }
+    if (!consent || typeof consent !== "boolean") {
+      return res.status(400).json({
+        error: "Consent is required for face verification. Must be true.",
+      });
+    }
+
+    // Validate base64 format (should contain commas or at least alphanumeric)
+    if (!/^[A-Za-z0-9+/=,]+$/.test(selfieBase64)) {
+      return res.status(400).json({ error: "Invalid selfie image format." });
+    }
+    if (!/^[A-Za-z0-9+/=,]+$/.test(idPhotoBase64)) {
+      return res.status(400).json({ error: "Invalid ID photo image format." });
+    }
+
+    // Check if running in sandbox mode
+    if (isSandboxMode) {
+      return res.json({
+        score: 0.92,
+        matched: true,
+        message: "Face match verification completed (sandbox mode).",
+        source: "sandbox",
+        confidence: 92,
+      });
+    }
+
+    // In production, this would call an ML-based face recognition API
+    // For now, return error indicating this feature requires proper configuration
+    console.warn("Face matching requested but no ML service configured. Using sandbox mode.");
+    return res.status(501).json({
+      error: "Face matching service not configured. Please enable DIGILOCKER_CLIENT_ID in production.",
+      source: "error",
+    });
+  } catch (err) {
+    console.error("Face match error:", err.message);
+    res.status(500).json({ error: "Failed to perform face matching." });
   }
-  if (!consent) {
-    return res.status(400).json({ error: "Consent is required for face verification." });
-  }
-  return res.json({
-    score: 0.94,
-    matched: true,
-    message: "Face matches securely with the uploaded ID photo.",
-    source: isSandboxMode ? "sandbox" : "demo",
-  });
 };
 
 module.exports = {

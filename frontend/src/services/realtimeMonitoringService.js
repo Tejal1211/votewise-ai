@@ -11,7 +11,7 @@ import {
   getDocs,
   limit,
 } from "firebase/firestore";
-import { db } from "./firebase";
+import { db } from "./firebase.js";
 
 /**
  * Real-Time Monitoring Service

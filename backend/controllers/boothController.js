@@ -1,5 +1,3 @@
-const { body, validationResult } = require("express-validator");
-
 /**
  * Booth Management Controller
  * Handles polling booth data, live metrics, and admin statistics
@@ -87,27 +85,30 @@ const getBooths = async (req, res) => {
     const longitude = parseFloat(lng);
     const radiusKm = parseFloat(radius);
 
-    // Calculate distance and filter booths
-    const nearbyBooths = mockBooths.filter((booth) => {
-      const distance = calculateDistance(
-        latitude,
-        longitude,
-        booth.latitude,
-        booth.longitude
-      );
-      return distance <= radiusKm;
-    });
+    // Validate coordinates
+    if (isNaN(latitude) || latitude < -90 || latitude > 90) {
+      return res.status(400).json({ error: "Invalid latitude. Must be between -90 and 90." });
+    }
+    if (isNaN(longitude) || longitude < -180 || longitude > 180) {
+      return res.status(400).json({ error: "Invalid longitude. Must be between -180 and 180." });
+    }
+    if (isNaN(radiusKm) || radiusKm <= 0) {
+      return res.status(400).json({ error: "Invalid radius. Must be a positive number." });
+    }
 
-    // Sort by distance
-    nearbyBooths.sort(
-      (a, b) =>
-        calculateDistance(latitude, longitude, a.latitude, a.longitude) -
-        calculateDistance(latitude, longitude, b.latitude, b.longitude)
-    );
+    // Calculate distance once for each booth and cache it
+    const boothsWithDistances = mockBooths
+      .map((booth) => ({
+        ...booth,
+        distance: calculateDistance(latitude, longitude, booth.latitude, booth.longitude),
+      }))
+      .filter((booth) => booth.distance <= radiusKm)
+      .sort((a, b) => a.distance - b.distance)
+      .map(({ distance, ...booth }) => booth); // Remove distance from response
 
     res.json({
-      booths: nearbyBooths,
-      count: nearbyBooths.length,
+      booths: boothsWithDistances,
+      count: boothsWithDistances.length,
       center: { lat: latitude, lng: longitude },
     });
   } catch (err) {
@@ -174,18 +175,29 @@ const getLiveStatus = async (req, res) => {
         timestamp: new Date(),
       };
     } else {
-      // Return global stats
+      // Return global stats - optimize with single pass through array
+      const stats = mockBooths.reduce(
+        (acc, booth) => {
+          acc.totalVotersProcessed += booth.currentVoters;
+          acc.totalCapacity += booth.capacity;
+          acc.totalCrowdLevel += booth.crowdLevel;
+          acc.totalWaitTime += booth.waitTime;
+          return acc;
+        },
+        {
+          totalVotersProcessed: 0,
+          totalCapacity: 0,
+          totalCrowdLevel: 0,
+          totalWaitTime: 0,
+        }
+      );
+
       const allStats = {
         totalBooths: mockBooths.length,
-        totalVotersProcessed: mockBooths.reduce((sum, b) => sum + b.currentVoters, 0),
-        globalTurnout:
-          (mockBooths.reduce((sum, b) => sum + b.currentVoters, 0) /
-            mockBooths.reduce((sum, b) => sum + b.capacity, 0)) *
-          100,
-        avgCrowdLevel:
-          mockBooths.reduce((sum, b) => sum + b.crowdLevel, 0) / mockBooths.length,
-        avgWaitTime:
-          mockBooths.reduce((sum, b) => sum + b.waitTime, 0) / mockBooths.length,
+        totalVotersProcessed: stats.totalVotersProcessed,
+        globalTurnout: (stats.totalVotersProcessed / stats.totalCapacity) * 100,
+        avgCrowdLevel: stats.totalCrowdLevel / mockBooths.length,
+        avgWaitTime: stats.totalWaitTime / mockBooths.length,
         timestamp: new Date(),
       };
       return res.json(allStats);
@@ -207,12 +219,33 @@ const getBoothDirections = async (req, res) => {
       return res.status(400).json({ error: "Missing coordinates" });
     }
 
-    const distance = calculateDistance(
-      parseFloat(originLat),
-      parseFloat(originLng),
-      parseFloat(destLat),
-      parseFloat(destLng)
-    );
+    const origLat = parseFloat(originLat);
+    const origLng = parseFloat(originLng);
+    const destLatNum = parseFloat(destLat);
+    const destLngNum = parseFloat(destLng);
+
+    // Validate all coordinates
+    if (isNaN(origLat) || origLat < -90 || origLat > 90) {
+      return res.status(400).json({ error: "Invalid origin latitude." });
+    }
+    if (isNaN(origLng) || origLng < -180 || origLng > 180) {
+      return res.status(400).json({ error: "Invalid origin longitude." });
+    }
+    if (isNaN(destLatNum) || destLatNum < -90 || destLatNum > 90) {
+      return res.status(400).json({ error: "Invalid destination latitude." });
+    }
+    if (isNaN(destLngNum) || destLngNum < -180 || destLngNum > 180) {
+      return res.status(400).json({ error: "Invalid destination longitude." });
+    }
+
+    // Check for same coordinates
+    if (origLat === destLatNum && origLng === destLngNum) {
+      return res.status(400).json({
+        error: "Origin and destination coordinates cannot be the same.",
+      });
+    }
+
+    const distance = calculateDistance(origLat, origLng, destLatNum, destLngNum);
 
     // Estimate time: 4 minutes per km (mixed urban traffic)
     const estimatedTime = Math.round(distance * 4);
@@ -334,8 +367,26 @@ const getAdminStats = async (req, res) => {
   }
 };
 
-// Helper function: Calculate distance between two points
+/**
+ * Helper function: Calculate distance between two geographic points using Haversine formula
+ * @param {number} lat1 - Starting latitude (-90 to 90)
+ * @param {number} lon1 - Starting longitude (-180 to 180)
+ * @param {number} lat2 - Ending latitude (-90 to 90)
+ * @param {number} lon2 - Ending longitude (-180 to 180)
+ * @returns {number} Distance in kilometers, or Infinity if coordinates invalid
+ * @throws {Error} If coordinates are NaN or out of valid range
+ */
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  // Validate coordinate ranges
+  const isValidLat = (lat) => typeof lat === "number" && !isNaN(lat) && lat >= -90 && lat <= 90;
+  const isValidLng = (lng) => typeof lng === "number" && !isNaN(lng) && lng >= -180 && lng <= 180;
+
+  if (!isValidLat(lat1) || !isValidLng(lon1) || !isValidLat(lat2) || !isValidLng(lon2)) {
+    throw new Error(
+      `Invalid coordinates: lat1=${lat1}, lon1=${lon1}, lat2=${lat2}, lon2=${lon2}`
+    );
+  }
+
   const R = 6371; // Earth's radius in km
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -356,4 +407,5 @@ module.exports = {
   getBoothDirections,
   getBestVoteTime,
   getAdminStats,
+  calculateDistance,
 };

@@ -1,12 +1,81 @@
-const API_URL = import.meta.env.VITE_API_URL || "";
+const API_URL = import.meta.env?.VITE_API_URL || "";
+
+/**
+ * Simple cache for API responses with TTL (Time To Live)
+ */
+class APICache {
+  constructor(ttlSeconds = 300) {
+    this.cache = new Map();
+    this.ttlSeconds = ttlSeconds;
+  }
+
+  set(key, value) {
+    const timestamp = Date.now();
+    this.cache.set(key, { value, timestamp });
+  }
+
+  get(key) {
+    const item = this.cache.get(key);
+    if (!item) return null;
+
+    const now = Date.now();
+    const age = (now - item.timestamp) / 1000;
+
+    if (age > this.ttlSeconds) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    return item.value;
+  }
+
+  clear() {
+    this.cache.clear();
+  }
+}
+
+const boothCache = new APICache(300); // 5 minute TTL for booth data
 
 /**
  * Google Maps and Polling Booth Service
  * Integrates with Google Maps and backend booth data
+ * Features: Response caching, error handling, input validation
  */
 
-export const getNearestBooths = async (latitude, longitude, radiusKm = 5) => {
+/**
+ * Fetches nearest polling booths with optional caching
+ * @param {number} latitude - User latitude (-90 to 90)
+ * @param {number} longitude - User longitude (-180 to 180)
+ * @param {number} radiusKm - Search radius in kilometers
+ * @param {boolean} useCache - Whether to use cached results
+ * @returns {Promise<Object>} Booths data or empty array on error
+ */
+export const getNearestBooths = async (latitude, longitude, radiusKm = 5, useCache = true) => {
   try {
+    // Validate inputs
+    if (typeof latitude !== "number" || latitude < -90 || latitude > 90) {
+      console.error("Invalid latitude:", latitude);
+      return { booths: [] };
+    }
+    if (typeof longitude !== "number" || longitude < -180 || longitude > 180) {
+      console.error("Invalid longitude:", longitude);
+      return { booths: [] };
+    }
+    if (typeof radiusKm !== "number" || radiusKm <= 0) {
+      console.error("Invalid radius:", radiusKm);
+      return { booths: [] };
+    }
+
+    const cacheKey = `booths_${latitude}_${longitude}_${radiusKm}`;
+
+    // Check cache first
+    if (useCache) {
+      const cached = boothCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
     const response = await fetch(
       `${API_URL}/api/booths?lat=${latitude}&lng=${longitude}&radius=${radiusKm}`,
       {
@@ -16,18 +85,32 @@ export const getNearestBooths = async (latitude, longitude, radiusKm = 5) => {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch booths");
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Cache the result
+    if (useCache) {
+      boothCache.set(cacheKey, data);
+    }
+
+    return data;
   } catch (error) {
     console.error("Error fetching nearest booths:", error);
-    return [];
+    return { booths: [] };
   }
 };
 
 export const getBoothDirections = async (originLat, originLng, destLat, destLng) => {
   try {
+    // Validate input coordinates
+    if (typeof originLat !== "number" || typeof originLng !== "number" ||
+        typeof destLat !== "number" || typeof destLng !== "number") {
+      console.error("Invalid coordinate types");
+      return null;
+    }
+
     const response = await fetch(
       `${API_URL}/api/booth-directions?originLat=${originLat}&originLng=${originLng}&destLat=${destLat}&destLng=${destLng}`,
       {
@@ -37,7 +120,7 @@ export const getBoothDirections = async (originLat, originLng, destLat, destLng)
     );
 
     if (!response.ok) {
-      throw new Error("Failed to fetch directions");
+      throw new Error(`HTTP ${response.status}`);
     }
 
     return await response.json();
@@ -47,15 +130,25 @@ export const getBoothDirections = async (originLat, originLng, destLat, destLng)
   }
 };
 
+/**
+ * Fetches detailed information for a specific booth
+ * @param {string} boothId - Booth identifier
+ * @returns {Promise<Object|null>} Booth details or null on error
+ */
 export const getBoothDetails = async (boothId) => {
   try {
-    const response = await fetch(`${API_URL}/api/booths/${boothId}`, {
+    if (!boothId || typeof boothId !== "string") {
+      console.error("Invalid booth ID:", boothId);
+      return null;
+    }
+
+    const response = await fetch(`${API_URL}/api/booths/${encodeURIComponent(boothId)}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch booth details");
+      throw new Error(`HTTP ${response.status}`);
     }
 
     return await response.json();

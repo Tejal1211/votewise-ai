@@ -4,22 +4,21 @@ import { BrowserRouter } from "react-router-dom";
 import CitizenDashboard from "../pages/CitizenDashboard";
 import { AuthContext } from "../context/AuthContext";
 import { LanguageContext } from "../context/LanguageContext";
+import { subscribeToUserStatus, subscribeToNotifications } from "../services/realtimeMonitoringService";
+import { getNearestBooths, getBestTimeToVote } from "../services/boothService";
 
 // Mock services
 vi.mock("../services/realtimeMonitoringService", () => ({
-  subscribeToUserStatus: vi.fn(),
-  subscribeToNotifications: vi.fn(),
+  subscribeToUserStatus: vi.fn(() => () => {}),
+  subscribeToNotifications: vi.fn(() => () => {}),
+  updateUserStatus: vi.fn(),
+  addNotification: vi.fn(),
 }));
 
 vi.mock("../services/boothService", () => ({
-  getNearestBooths: vi.fn(),
-  getBestTimeToVote: vi.fn(),
-}));
-
-// Mock Firebase
-vi.mock("firebase/firestore", () => ({
-  doc: vi.fn(),
-  getDoc: vi.fn(),
+  getNearestBooths: vi.fn().mockResolvedValue({ booths: [] }),
+  getBestTimeToVote: vi.fn().mockResolvedValue({ suggestedTime: "Morning", estimatedWaitTime: 5 }),
+  calculateCrowdColor: vi.fn(() => "#00FF00"),
 }));
 
 const mockUser = {
@@ -54,129 +53,84 @@ const renderWithProviders = (component) => {
 describe("CitizenDashboard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-  });
-
-  it("renders loading state initially", () => {
-    renderWithProviders(<CitizenDashboard />);
-
-    expect(screen.getByText("Loading dashboard...")).toBeInTheDocument();
-  });
-
-  it("renders dashboard with countdown timer", async () => {
-    const mockSubscribeToUserStatus = vi.fn((userId, callback) => {
+    
+    // Default mocks
+    vi.mocked(subscribeToUserStatus).mockImplementation((userId, callback) => {
       callback({ status: "registered" });
       return () => {};
     });
-
-    const mockSubscribeToNotifications = vi.fn((userId, callback) => {
+    vi.mocked(subscribeToNotifications).mockImplementation((userId, callback) => {
       callback([]);
       return () => {};
     });
+    vi.mocked(getNearestBooths).mockResolvedValue({ booths: [] });
+  });
 
-    const mockGetNearestBooths = vi.fn().mockResolvedValue({
-      booths: [
-        {
-          boothId: "B001",
-          name: "Test Booth",
-          address: "123 Test St",
-          crowdLevel: 50,
-          waitTime: 15,
-          currentVoters: 100,
-          capacity: 200,
-        },
-      ],
-    });
+  it("renders loading state initially", () => {
+    // Force loading state by not calling callback immediately in mock
+    vi.mocked(subscribeToUserStatus).mockImplementation(() => () => {});
+    
+    renderWithProviders(<CitizenDashboard />);
+    expect(screen.getByText(/Loading dashboard/i)).toBeInTheDocument();
+  });
 
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToUserStatus).mockImplementation(mockSubscribeToUserStatus);
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToNotifications).mockImplementation(mockSubscribeToNotifications);
-    vi.mocked(require("../services/boothService").getNearestBooths).mockImplementation(mockGetNearestBooths);
-
+  it("renders dashboard with countdown timer", async () => {
     renderWithProviders(<CitizenDashboard />);
 
     await waitFor(() => {
       expect(screen.getByText("📊 Citizen Dashboard")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("Days Until Election")).toBeInTheDocument();
-    expect(screen.getByText("Registration Status")).toBeInTheDocument();
-    expect(screen.getByText("Booth Queue Status")).toBeInTheDocument();
+    expect(screen.getByText(/Days Until Election/i)).toBeInTheDocument();
+    expect(screen.getByText(/Registration Status/i)).toBeInTheDocument();
+    expect(screen.getByText(/Booth Queue Status/i)).toBeInTheDocument();
   });
 
   it("displays nearby polling booths", async () => {
-    const mockSubscribeToUserStatus = vi.fn((userId, callback) => {
-      callback({ status: "registered" });
-      return () => {};
-    });
+    const mockBooths = [
+      {
+        boothId: "B001",
+        name: "City Central School",
+        address: "123 Main St",
+        crowdLevel: 45,
+        waitTime: 15,
+        currentVoters: 90,
+        capacity: 200,
+      },
+    ];
 
-    const mockSubscribeToNotifications = vi.fn((userId, callback) => {
-      callback([]);
-      return () => {};
-    });
-
-    const mockGetNearestBooths = vi.fn().mockResolvedValue({
-      booths: [
-        {
-          boothId: "B001",
-          name: "City Central School",
-          address: "123 Main St",
-          crowdLevel: 45,
-          waitTime: 15,
-          currentVoters: 90,
-          capacity: 200,
-        },
-      ],
-    });
-
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToUserStatus).mockImplementation(mockSubscribeToUserStatus);
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToNotifications).mockImplementation(mockSubscribeToNotifications);
-    vi.mocked(require("../services/boothService").getNearestBooths).mockImplementation(mockGetNearestBooths);
+    vi.mocked(getNearestBooths).mockResolvedValue({ booths: mockBooths });
 
     renderWithProviders(<CitizenDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("📍 Nearby Polling Booths")).toBeInTheDocument();
+      expect(screen.getByText("City Central School")).toBeInTheDocument();
     });
 
-    expect(screen.getByText("City Central School")).toBeInTheDocument();
     expect(screen.getByText("123 Main St")).toBeInTheDocument();
+    expect(screen.getByText(/45% crowd/i)).toBeInTheDocument();
   });
 
   it("handles booth selection and shows details", async () => {
-    const mockSubscribeToUserStatus = vi.fn((userId, callback) => {
-      callback({ status: "registered" });
-      return () => {};
-    });
+    const mockBooths = [
+      {
+        boothId: "B001",
+        name: "Test Booth",
+        address: "123 Test St",
+        crowdLevel: 50,
+        waitTime: 15,
+        currentVoters: 100,
+        capacity: 200,
+        openTime: "07:00 AM",
+        closeTime: "6:00 PM",
+      },
+    ];
 
-    const mockSubscribeToNotifications = vi.fn((userId, callback) => {
-      callback([]);
-      return () => {};
-    });
-
-    const mockGetNearestBooths = vi.fn().mockResolvedValue({
-      booths: [
-        {
-          boothId: "B001",
-          name: "Test Booth",
-          address: "123 Test St",
-          crowdLevel: 50,
-          waitTime: 15,
-          currentVoters: 100,
-          capacity: 200,
-          openTime: "07:00 AM",
-          closeTime: "6:00 PM",
-        },
-      ],
-    });
-
-    const mockGetBestTimeToVote = vi.fn().mockResolvedValue({
+    vi.mocked(getNearestBooths).mockResolvedValue({ booths: mockBooths });
+    vi.mocked(getBestTimeToVote).mockResolvedValue({
       suggestedTime: "Morning (7 AM - 10 AM)",
       estimatedWaitTime: 5,
     });
-
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToUserStatus).mockImplementation(mockSubscribeToUserStatus);
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToNotifications).mockImplementation(mockSubscribeToNotifications);
-    vi.mocked(require("../services/boothService").getNearestBooths).mockImplementation(mockGetNearestBooths);
-    vi.mocked(require("../services/boothService").getBestTimeToVote).mockImplementation(mockGetBestTimeToVote);
 
     renderWithProviders(<CitizenDashboard />);
 
@@ -184,24 +138,19 @@ describe("CitizenDashboard", () => {
       expect(screen.getByText("Test Booth")).toBeInTheDocument();
     });
 
-    const boothButton = screen.getByText("Test Booth");
-    fireEvent.click(boothButton);
+    fireEvent.click(screen.getByText("Test Booth"));
 
     await waitFor(() => {
-      expect(screen.getByText("Selected Booth")).toBeInTheDocument();
+      expect(screen.getByText("📌 Selected Booth")).toBeInTheDocument();
     });
 
     expect(screen.getByText("B001")).toBeInTheDocument();
-    expect(screen.getByText("07:00 AM - 6:00 PM")).toBeInTheDocument();
+    expect(screen.getByText(/07:00 AM - 6:00 PM/i)).toBeInTheDocument();
+    expect(screen.getByText(/Morning \(7 AM - 10 AM\)/i)).toBeInTheDocument();
   });
 
   it("displays notifications", async () => {
-    const mockSubscribeToUserStatus = vi.fn((userId, callback) => {
-      callback({ status: "registered" });
-      return () => {};
-    });
-
-    const mockSubscribeToNotifications = vi.fn((userId, callback) => {
+    vi.mocked(subscribeToNotifications).mockImplementation((userId, callback) => {
       callback([
         {
           id: "n1",
@@ -213,16 +162,10 @@ describe("CitizenDashboard", () => {
       return () => {};
     });
 
-    const mockGetNearestBooths = vi.fn().mockResolvedValue({ booths: [] });
-
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToUserStatus).mockImplementation(mockSubscribeToUserStatus);
-    vi.mocked(require("../services/realtimeMonitoringService").subscribeToNotifications).mockImplementation(mockSubscribeToNotifications);
-    vi.mocked(require("../services/boothService").getNearestBooths).mockImplementation(mockGetNearestBooths);
-
     renderWithProviders(<CitizenDashboard />);
 
     await waitFor(() => {
-      expect(screen.getByText("🔔 Notifications (1)")).toBeInTheDocument();
+      expect(screen.getByText(/Notifications \(1\)/i)).toBeInTheDocument();
     });
 
     expect(screen.getByText("Registration Confirmed")).toBeInTheDocument();

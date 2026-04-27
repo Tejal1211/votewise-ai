@@ -42,8 +42,8 @@ router.post(
   "/chat",
   chatLimiter,
   [
-    body("message").isString().trim().notEmpty().isLength({ max: 1000 }),
-    body("language").optional().isIn(["en", "hi", "mr"]),
+    body("message").isString().trim().escape().notEmpty().isLength({ max: 1000 }),
+    body("language").optional().trim().escape().isIn(["en", "hi", "mr"]),
   ],
   validate,
   chat
@@ -51,7 +51,11 @@ router.post(
 
 router.post(
   "/eligibility",
-  [body("age").isNumeric(), body("citizenship").isString().trim().notEmpty()],
+  [
+    body("age").isNumeric().trim().escape(),
+    body("citizenship").isString().trim().escape().notEmpty(),
+    body("residencyYears").optional().isNumeric().trim().escape(),
+  ],
   validate,
   eligibilityCheck
 );
@@ -60,13 +64,18 @@ router.get("/digilocker/login", digilockerLogin);
 router.get("/digilocker/callback", digilockerCallback);
 router.get("/digilocker/profile", digilockerProfile);
 router.get("/digilocker/documents", digilockerDocuments);
-router.get("/digilocker/document/:id", digilockerDocumentById);
-router.post("/ocr", [body("imageBase64").isString().notEmpty()], validate, ocrExtract);
+router.get("/digilocker/document/:id", [param("id").isString().trim().escape().notEmpty()], validate, digilockerDocumentById);
+router.post(
+  "/ocr",
+  [body("imageBase64").isString().notEmpty().trim().escape()],
+  validate,
+  ocrExtract
+);
 router.post(
   "/face-match",
   [
-    body("selfieBase64").isString().notEmpty(),
-    body("idPhotoBase64").isString().notEmpty(),
+    body("selfieBase64").isString().notEmpty().trim().escape(),
+    body("idPhotoBase64").isString().notEmpty().trim().escape(),
     body("consent").isBoolean(),
   ],
   validate,
@@ -80,10 +89,10 @@ router.get("/myths", getMythsAndFacts);
 router.post(
   "/wizard",
   [
-    body("age").isNumeric(),
-    body("state").optional().isString().trim(),
-    body("firstTimeVoter").optional().isIn(["yes", "no"]),
-    body("needsAssistance").optional().isIn(["yes", "no"]),
+    body("age").isNumeric().trim().escape(),
+    body("state").optional().isString().trim().escape(),
+    body("firstTimeVoter").optional().trim().escape().isIn(["yes", "no"]),
+    body("needsAssistance").optional().trim().escape().isIn(["yes", "no"]),
   ],
   validate,
   getWizardGuidance
@@ -93,27 +102,27 @@ router.post(
 router.get(
   "/booths",
   [
-    query("lat").isFloat({ min: -90, max: 90 }),
-    query("lng").isFloat({ min: -180, max: 180 }),
-    query("radius").optional().isNumeric(),
+    query("lat").isFloat({ min: -90, max: 90 }).trim().escape(),
+    query("lng").isFloat({ min: -180, max: 180 }).trim().escape(),
+    query("radius").optional().isNumeric().trim().escape(),
   ],
   validate,
   getBooths
 );
-router.get("/booths/:id", getBoothById);
-router.get("/live-status", getLiveStatus);
+router.get("/booths/:id", [param("id").isString().trim().escape().notEmpty()], validate, getBoothById);
+router.get("/live-status", [query("boothId").optional().trim().escape(), query("regionId").optional().trim().escape()], validate, getLiveStatus);
 router.get(
   "/booth-directions",
   [
-    query("originLat").isFloat({ min: -90, max: 90 }),
-    query("originLng").isFloat({ min: -180, max: 180 }),
-    query("destLat").isFloat({ min: -90, max: 90 }),
-    query("destLng").isFloat({ min: -180, max: 180 }),
+    query("originLat").isFloat({ min: -90, max: 90 }).trim().escape(),
+    query("originLng").isFloat({ min: -180, max: 180 }).trim().escape(),
+    query("destLat").isFloat({ min: -90, max: 90 }).trim().escape(),
+    query("destLng").isFloat({ min: -180, max: 180 }).trim().escape(),
   ],
   validate,
   getBoothDirections
 );
-router.get("/best-vote-time", [query("boothId").notEmpty()], validate, getBestVoteTime);
+router.get("/best-vote-time", [query("boothId").notEmpty().trim().escape()], validate, getBestVoteTime);
 router.get("/admin/stats", adminLimiter, getAdminStats);
 
 router.get("/health", (req, res) => {

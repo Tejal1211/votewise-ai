@@ -41,6 +41,6 @@ Our approach focuses on **Contextual Intelligence**. The system doesn't just pro
 *   **Security**: Helmet.js, Rate Limiting, and Environment Variable secret management.
 *   **Efficiency**: **Total Repository Size < 200 KB**. 
 *   **Accessibility**: WCAG 2.1 AA compliant design.
-
+Deployment link: https://techfest-2026-689374212994.us-central1.run.app
 ---
 *Created for the Google Antigravity Code Challenge.*

@@ -1,4 +1,4 @@
-# VoteWise AI 🗳️
+# VoteWise AI 
 ### *Intelligent Election Education Platform — Built with Google Gemini AI & Firebase*
 
 VoteWise AI is a smart, dynamic election education assistant designed to solve the civic knowledge gap for over 900 million Indian voters. By leveraging the Google ecosystem and real-time monitoring, it provides personalized, multilingual guidance to make the democratic process accessible to everyone.

@@ -5,7 +5,7 @@ VoteWise AI is a smart, dynamic election education assistant designed to solve t
 
 
 
-## 🎯 Chosen Vertical: Election Process Education
+## Chosen Vertical: Election Process Education
 VoteWise AI addresses the critical issues of voter registration confusion, document verification myths, and polling station accessibility.
 
 ## 🧠 Approach & Logic

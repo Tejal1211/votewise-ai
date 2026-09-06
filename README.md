@@ -42,5 +42,5 @@ Our approach focuses on **Contextual Intelligence**. The system doesn't just pro
 *   **Efficiency**: **Total Repository Size < 200 KB**. 
 *   **Accessibility**: WCAG 2.1 AA compliant design.
 Deployment link: https://techfest-2026-689374212994.us-central1.run.app
----
+
 *Created for the Google Antigravity Code Challenge.*

@@ -17,7 +17,7 @@ Our approach focuses on **Contextual Intelligence**. The system doesn't just pro
 2.  **AI Orchestration**: Gemini AI is fed this context to provide hyper-personalized voting advice.
 3.  **Real-Time Monitoring**: Firestore listeners update the dashboard instantly when registration status or booth wait times change.
 
-## 📝 Assumptions Made
+# 📝 Assumptions Made
 *   **Connectivity**: Assumes the user has a stable internet connection for real-time Gemini AI and Maps data.
 *   **Language**: Assumes most voters in the target demographic are comfortable with English, Hindi, or Marathi (extensible to other languages).
 *   **Data Accuracy**: Assumes the user provides accurate age and residency information for eligibility verification.
